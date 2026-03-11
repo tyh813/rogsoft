@@ -3,8 +3,6 @@ name: Build Tailscale HND
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -14,7 +12,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Fix script and Build
         run: |
-          chmod +x tailscale/build_hnd.sh
-          ./tailscale/build_hnd.sh
+          # 1. 修正腳本中的 python 指令為 python3 (避免環境找不到 python)
+          sed -i 's/python /python3 /g' tailscale/build_hnd.sh
+          
+          # 2. 進入 tailscale 目錄執行，確保 $DIR 變數正確
+          cd tailscale
+          chmod +x build_hnd.sh
+          ./build_hnd.sh
+
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: tailscale-hnd-package
+          path: |
+            tailscale/*.tar.gz
+            tailscale/version
+            tailscale/config.json.js
